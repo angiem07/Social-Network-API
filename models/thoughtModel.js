@@ -6,9 +6,9 @@ const thoughtSchema = new Schema(
   {
     thoughtText: {
       type: String,
-      required: 'You need to leave a thought!',
-      minlength: 1,
-      maxlength: 280
+      required: [true, 'You need to leave a thought.'],
+      minlength: [1, 'Thought must be at least 1 character long.'],
+      maxlength: [280, 'Thought cannot exceed 280 characters.']
     },
     createdAt: {
       type: Date,
@@ -17,7 +17,7 @@ const thoughtSchema = new Schema(
     },
     username: {
       type: String,
-      required: true
+      required: [true, 'Username is required.']
     },
     reactions: [reactionSchema]
   },
@@ -25,11 +25,15 @@ const thoughtSchema = new Schema(
     toJSON: {
       getters: true
     },
-    id: false
+    id: false 
+    // prevents mongoose from adding an _id field to the model 
   }
 );
+
+// virtual property for reactionCount
 thoughtSchema.virtual('reactionCount').get(function() {
   return this.reactions.length;
 });
+
 const Thought = model('Thought', thoughtSchema);
 module.exports = Thought;

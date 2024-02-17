@@ -1,18 +1,18 @@
-const { Schema, model, Types } = require('mongoose');
+const { Schema, model } = require('mongoose');
 
 const UserSchema = new Schema(
   {
     username: {
       type: String,
       unique: true,
-      required: true,
+      required: [true, 'Username is required'],
       trim: true
     },
     email: {
       type: String,
       unique: true,
-      required: true,
-      match: [/^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/, 'Please enter a valid email address']
+      required: [true, 'Email is required'],
+      match: [ /^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/, 'Please enter a valid email address']
     },
     thoughts: [
       {
@@ -34,8 +34,28 @@ const UserSchema = new Schema(
   }
 );
 
+// virtual property for friendCount
 UserSchema.virtual('friendCount').get(function () {
   return this.friends.length;
+});
+
+// hook calls before saving to ensure unique email and username
+UserSchema.pre('save', async function (next) {
+  try {
+    const user = this;
+    const existingUser = await User.findOne({ $or: [{ username: user.username }, { email: user.email }] });
+    if (existingUser) {
+      if (existingUser.username === user.username) {
+        throw new Error('Username already exists');
+      }
+      if (existingUser.email === user.email) {
+        throw new Error('Email already exists');
+      }
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 const User = model('User', UserSchema);
