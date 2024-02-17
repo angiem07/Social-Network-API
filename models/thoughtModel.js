@@ -26,7 +26,7 @@ const thoughtSchema = new Schema(
       getters: true
     },
     id: false 
-    // prevents mongoose from adding an _id field to the model 
+    // prevents mongoose from adding an id field to the model 
   }
 );
 
