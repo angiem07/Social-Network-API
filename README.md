@@ -11,6 +11,10 @@ To use this application, first install dependencies with `npm install`. Then, ru
 Video walkthrough:
 
 
+https://github.com/angiem07/Social-Network-API/assets/143362421/4828d325-476b-4eb7-8f0e-c28f027a7daf
+
+
+
 ## Credits 
 References: \
 https://github.com/civ187/social-network-API/blob/master/README.md \
