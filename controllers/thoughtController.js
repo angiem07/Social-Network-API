@@ -1,141 +1,123 @@
-const { Thought, User } = require('../models');
+const { User, Thought } = require('../models');
 
 const thoughtController = {
-
-  // GET all thoughts
+  // get all thoughts
   async getAllThoughts(req, res) {
     try {
       const thoughts = await Thought.find({})
-        .populate({
-          path: "reactions",
-          select: "-__v",
-        })
-        .select("-__v")
+        .populate({ path: 'reactions', select: '-__v' })
+        .select('-__v')
         .sort({ _id: -1 });
       res.json(thoughts);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // GET one thought by id
+  // get one thought by id
   async getThoughtById({ params }, res) {
     try {
-      const thought = await Thought.findOne({ _id: params.thoughtId })
-        .populate({
-          path: "reactions",
-          select: "-__v",
-        })
-        .select("-__v");
+      const thought = await Thought.findOne({ _id: params.id })
+        .populate({ path: 'reactions', select: '-__v' })
+        .select('-__v');
+      
       if (!thought) {
-        res.status(404).json({ message: "No thought with this id." });
-        return;
+        return res.status(404).json({ message: 'No thought found with that id!' });
       }
+      
       res.json(thought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // POST thought
-  async createThought({ params, body }, res) {
+  // create thought
+  async createThought({ body }, res) {
     try {
-      const newThought = await Thought.create(body);
-      const user = await User.findOneAndUpdate(
-        { _id: params.userId },
-        { $push: { thoughts: newThought._id } },
-        { new: true }
-      );
-      if (!user) {
-        res.status(404).json({ message: "No user found with this id." });
-        return;
-      }
-      res.json(user);
+      const thought = await Thought.create(body);
+      await User.findOneAndUpdate({ _id: body.userId }, { $push: { thoughts: thought._id } }, { new: true });
+      res.status(201).json(thought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(400).json(err);
     }
   },
 
-  // PUT update thought
+  // update thought by id
   async updateThought({ params, body }, res) {
     try {
-      const updatedThought = await Thought.findOneAndUpdate({ _id: params.thoughtId }, body, {
-        new: true,
-        runValidators: true,
-      });
-      if (!updatedThought) {
-        res.status(404).json({ message: "No thought found with this id." });
-        return;
+      const thought = await Thought.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true });
+      
+      if (!thought) {
+        return res.status(404).json({ message: 'No thought found with that id!' });
       }
-      res.json(updatedThought);
+      
+      res.json(thought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(400).json(err);
     }
   },
 
-  // DELETE thought
+  // delete thought by ID
   async deleteThought({ params }, res) {
     try {
-      const deletedThought = await Thought.findOneAndDelete({ _id: params.thoughtId });
+      const deletedThought = await Thought.findOneAndDelete({ _id: params.id });
+      
       if (!deletedThought) {
-        res.status(404).json({ message: "No thought with this id." });
-        return;
+        return res.status(404).json({ message: 'No thought found with that id!' });
       }
-      const user = await User.findOneAndUpdate(
-        { _id: params.userId },
-        { $pull: { thoughts: params.thoughtId } },
-        { new: true }
-      );
-      if (!user) {
-        res.status(404).json({ message: "No user found with this id." });
-        return;
-      }
-      res.json(user);
+      
+      await User.findOneAndUpdate({ _id: params.userId }, { $pull: { thoughts: params.id } }, { new: true });
+      
+      res.json(deletedThought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // POST reaction
+  // create reaction
   async createReaction({ params, body }, res) {
     try {
       const updatedThought = await Thought.findOneAndUpdate(
         { _id: params.thoughtId },
         { $push: { reactions: body } },
         { new: true, runValidators: true }
-      );
+      ).populate({ path: 'reactions', select: '-__v' }).select('-__v');
+
       if (!updatedThought) {
-        res.status(404).json({ message: "No thought found with this id." });
-        return;
+        return res.status(404).json({ message: 'No thought found with this ID.' });
       }
+
       res.json(updatedThought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(400).json(err);
     }
   },
 
-  // DELETE reaction
+  // delete reaction
   async deleteReaction({ params }, res) {
     try {
       const updatedThought = await Thought.findOneAndUpdate(
         { _id: params.thoughtId },
         { $pull: { reactions: { reactionId: params.reactionId } } },
-        { new: true, runValidators: true }
+        { new: true }
       );
+
       if (!updatedThought) {
-        res.status(404).json({ message: "No thought found with this id." });
-        return;
+        return res.status(404).json({ message: 'No thought found with this ID.' });
       }
+
       res.json(updatedThought);
     } catch (err) {
-      handleError(res, err);
+      console.error(err);
+      res.status(400).json(err);
     }
-  },
-};
-
-const handleError = (res, err) => {
-  console.error(err);
-  res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 module.exports = thoughtController;

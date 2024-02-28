@@ -1,122 +1,110 @@
-const { User } = require('../models');
+const { User, Thought } = require('../models');
 
 const userController = {
-
-  // GET all users
+  // get all users
   async getAllUsers(req, res) {
     try {
-      const users = await User.find({})
-        .populate([
-          {
-            path: "thoughts",
-            select: "-__v",
-          },
-          {
-            path: "friends",
-            select: "-__v"
-          }
-        ])
-        .select("-__v")
-        .sort({ _id: -1 });
+      const users = await User.find({}).select('-__v').sort({ _id: -1 });
       res.json(users);
     } catch (err) {
-      res.status(500).json({ message: "Internal server error." });
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // GET user by id
+  // get one User by id
   async getUserById({ params }, res) {
     try {
       const user = await User.findOne({ _id: params.id })
-        .populate([
-          {
-            path: "thoughts",
-            select: "-__v",
-          },
-          {
-            path: "friends",
-            select: "-__v",
-          }
-        ])
-        .select("-__v");
+        .populate({ path: 'thoughts', select: '-__v' })
+        .populate({ path: 'friends', select: '-__v' });
+
       if (!user) {
-        return res.status(404).json({ message: "No user found with this id." });
+        return res.status(404).json({ message: 'No User found with this id!' });
       }
+      
       res.json(user);
     } catch (err) {
-      res.status(500).json({ message: "Internal server error." });
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // POST user
+  // create User
   async createUser({ body }, res) {
     try {
-      const newUser = await User.create(body);
-      res.json(newUser);
+      const user = await User.create(body);
+      res.status(201).json(user);
     } catch (err) {
+      console.error(err);
       res.status(400).json(err);
     }
   },
 
-  // PUT update user
+  // update User by id
   async updateUser({ params, body }, res) {
     try {
-      const updatedUser = await User.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true });
-      if (!updatedUser) {
-        return res.status(404).json({ message: "No user found with this id." });
+      const user = await User.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true });
+
+      if (!user) {
+        return res.status(404).json({ message: 'No User found with this id!' });
       }
-      res.json(updatedUser);
+      
+      res.json(user);
     } catch (err) {
+      console.error(err);
       res.status(400).json(err);
     }
   },
 
-  // DELETE user
+  //Delete user and users associated thoughts
   async deleteUser({ params }, res) {
     try {
+      await Thought.deleteMany({ userId: params.id });
       const deletedUser = await User.findOneAndDelete({ _id: params.id });
+
       if (!deletedUser) {
-        return res.status(404).json({ message: "No user found with this id." });
+        return res.status(404).json({ message: 'No User found with this id.' });
       }
+      
       res.json(deletedUser);
     } catch (err) {
-      res.status(400).json(err);
+      console.error(err);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
   },
 
-  // POST friend
-  async createFriend({ params }, res) {
+  // add friend
+  async addFriend({ params }, res) {
     try {
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: params.userId },
-        { $push: { friends: params.friendId } },
-        { new: true, runValidators: true }
-      );
-      if (!updatedUser) {
-        return res.status(404).json({ message: "No user found with this id." });
+      const user = await User.findOneAndUpdate({ _id: params.userId }, { $push: { friends: params.friendId } }, { new: true });
+
+      if (!user) {
+        return res.status(404).json({ message: 'No user found with this id' });
       }
-      res.json(updatedUser);
+
+      res.json(user);
     } catch (err) {
+      console.error(err);
       res.status(400).json(err);
     }
   },
 
-  // DELETE friend
+  // delete friend
   async deleteFriend({ params }, res) {
     try {
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: params.userId },
-        { $pull: { friends: params.friendId } },
-        { new: true, runValidators: true }
-      );
-      if (!updatedUser) {
-        return res.status(404).json({ message: "No user found with this id." });
+      const user = await User.findOneAndUpdate({ _id: params.userId }, { $pull: { friends: params.friendId } }, { new: true });
+
+      if (!user) {
+        return res.status(404).json({ message: 'No user found with this id' });
       }
-      res.json(updatedUser);
+
+      res.json(user);
     } catch (err) {
+      console.error(err);
       res.status(400).json(err);
     }
-  },
+  }
 };
 
 module.exports = userController;

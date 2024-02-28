@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 
-const UserSchema = new Schema(
+const userSchema = new Schema(
   {
     username: {
       type: String,
@@ -35,12 +35,12 @@ const UserSchema = new Schema(
 );
 
 // virtual property for friendCount
-UserSchema.virtual('friendCount').get(function () {
+userSchema.virtual('friendCount').get(function () {
   return this.friends.length;
 });
 
 // hook calls before saving to ensure unique email and username
-UserSchema.pre('save', async function (next) {
+userSchema.pre('save', async function (next) {
   try {
     const user = this;
     const existingUser = await User.findOne({ $or: [{ username: user.username }, { email: user.email }] });
@@ -58,6 +58,6 @@ UserSchema.pre('save', async function (next) {
   }
 });
 
-const User = model('User', UserSchema);
+const User = model('User', userSchema);
 
 module.exports = User;
